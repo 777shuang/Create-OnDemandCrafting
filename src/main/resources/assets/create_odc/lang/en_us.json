@@ -1,0 +1,13 @@
+{
+  "itemGroup.create_odc": "Example Mod Tab",
+  "block.create_odc.example_block": "Example Block",
+  "item.create_odc.example_item": "Example Item",
+
+  "create_odc.configuration.title": "Create: On Demand Crafting Configs",
+  "create_odc.configuration.section.create_odc.common.toml": "Create: On Demand Crafting Configs",
+  "create_odc.configuration.section.create_odc.common.toml.title": "Create: On Demand Crafting Configs",
+  "create_odc.configuration.items": "Item List",
+  "create_odc.configuration.logDirtBlock": "Log Dirt Block",
+  "create_odc.configuration.magicNumberIntroduction": "Magic Number Text",
+  "create_odc.configuration.magicNumber": "Magic Number"
+}
