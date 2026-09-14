@@ -29,6 +29,7 @@ sourceSets.main.resources {
 repositories {
     maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
     maven { url = "https://maven.ithundxr.dev/snapshots" } // Registrate
+    maven { url = "https://cursemaven.com" }
 }
 
 base {
@@ -122,7 +123,9 @@ dependencies {
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
     // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
     // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
+    localRuntime "curse.maven:modernfix-790626:8774737"
+    localRuntime "curse.maven:ferritecore-429235:7524151"
+    localRuntime "curse.maven:fastboot-1030285:6998687"
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
@@ -157,6 +160,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_name               : mod_name,
             mod_license            : mod_license,
             mod_version            : mod_version,
+            create_version         : create_version,
+            create_version_range   : create_version_range,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

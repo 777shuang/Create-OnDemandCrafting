@@ -1,0 +1,7 @@
+{
+  "itemGroup.create_odc": "Create: On Demand Crafting",
+  "gui.create_odc.on_demand_crafting": "オンデマンドクラフト",
+  "gui.create_odc.on_demand_crafting.enabled": "有効 (要求時のみクラフト)",
+  "gui.create_odc.on_demand_crafting.disabled": "無効 (常に目標数まで作り置き)",
+  "gui.create_odc.on_demand_crafting.description": "物流ネットワークから要求された時のみクラフトを発注します。"
+}

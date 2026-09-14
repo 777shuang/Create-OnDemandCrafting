@@ -68,6 +68,7 @@ public class CreateOnDemandCrafting {
     public CreateOnDemandCrafting(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(com.github.shuang777.createondemandcrafting.network.ModPackets::register);
 
         // Register the Deferred Register to the mod event bus so blocks get registered
         BLOCKS.register(modEventBus);

@@ -9,5 +9,10 @@
   "create_odc.configuration.items": "Item List",
   "create_odc.configuration.logDirtBlock": "Log Dirt Block",
   "create_odc.configuration.magicNumberIntroduction": "Magic Number Text",
-  "create_odc.configuration.magicNumber": "Magic Number"
+  "create_odc.configuration.magicNumber": "Magic Number",
+
+  "gui.create_odc.on_demand_crafting": "On-Demand Crafting",
+  "gui.create_odc.on_demand_crafting.enabled": "Enabled (Craft only on request)",
+  "gui.create_odc.on_demand_crafting.disabled": "Disabled (Always restock up to limit)",
+  "gui.create_odc.on_demand_crafting.description": "Orders crafting only when requested by logistics network."
 }
