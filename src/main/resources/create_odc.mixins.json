@@ -2,10 +2,12 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.github.shuang777.createondemandcrafting.mixin",
+  "refMap": "create_odc.refmap.json",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "FactoryPanelBehaviourMixin",
-    "FactoryPanelBlockEntityMixin"
+    "FactoryPanelBlockEntityMixin",
+    "LogisticsManagerMixin"
   ],
   "client": [
     "FactoryPanelScreenMixin"
