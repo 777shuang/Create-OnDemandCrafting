@@ -50,7 +50,7 @@ public abstract class FactoryPanelScreenMixin extends AbstractSimiScreen {
             isOnDemand = panel.create_odc$isOnDemand();
         }
 
-        this.create_odc$onDemandButton = new IconButton(x + 31, y + 27, AllIcons.I_TARGET);
+        this.create_odc$onDemandButton = new IconButton(x + 11, y + 27, AllIcons.I_TARGET);
         this.create_odc$onDemandButton.green = isOnDemand;
         this.create_odc$updateTooltip(isOnDemand);
 
