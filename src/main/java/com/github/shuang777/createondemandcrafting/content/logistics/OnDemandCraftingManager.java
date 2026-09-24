@@ -114,7 +114,9 @@ public class OnDemandCraftingManager {
                 // ネットワーク内の現在庫数
                 int currentStock = summary.getCountOf(stack.stack);
                 // 不足している数量を計算（在庫で賄えない分）
-                int needed = Math.max(1, stack.count - currentStock);
+                int needed = Math.max(0, stack.count - currentStock);
+                if (needed <= 0)
+                    continue;
 
                 // オンデマンド要求を追加
                 onDemandPanel.create_odc$addOnDemandOrders(needed);
@@ -122,6 +124,44 @@ public class OnDemandCraftingManager {
                 panel.resetTimer();
             }
         }
+    }
+
+    /**
+     * 指定されたネットワーク内のアクティブなオンデマンドファクトリーゲージから、
+     * 生産可能なアイテム（フィルター）の一覧を取得する。
+     */
+    public static synchronized java.util.List<ItemStack> getOnDemandCraftableItems(UUID network) {
+        if (network == null)
+            return Collections.emptyList();
+        Set<FactoryPanelBehaviour> panels = getPanels(network);
+        if (panels.isEmpty())
+            return Collections.emptyList();
+
+        java.util.List<ItemStack> result = new java.util.ArrayList<>();
+        for (FactoryPanelBehaviour panel : panels) {
+            if (!panel.isActive() || panel.panelBE().restocker)
+                continue;
+            if (!(panel instanceof IOnDemandPanel onDemandPanel) || !onDemandPanel.create_odc$isOnDemand())
+                continue;
+            if (panel.recipeAddress.isBlank() || panel.targetedBy.isEmpty())
+                continue;
+
+            ItemStack filter = panel.getFilter();
+            if (filter.isEmpty())
+                continue;
+
+            boolean alreadyPresent = false;
+            for (ItemStack existing : result) {
+                if (ItemStack.isSameItemSameComponents(existing, filter)) {
+                    alreadyPresent = true;
+                    break;
+                }
+            }
+            if (!alreadyPresent) {
+                result.add(filter.copyWithCount(1));
+            }
+        }
+        return result;
     }
 
     /**

@@ -3,5 +3,7 @@
   "gui.create_odc.on_demand_crafting": "オンデマンドクラフト",
   "gui.create_odc.on_demand_crafting.enabled": "有効 (要求時のみクラフト)",
   "gui.create_odc.on_demand_crafting.disabled": "無効 (常に目標数まで作り置き)",
-  "gui.create_odc.on_demand_crafting.description": "物流ネットワークから要求された時のみクラフトを発注します。"
+  "gui.create_odc.on_demand_crafting.description": "物流ネットワークから要求された時のみクラフトを発注します。",
+  "gui.create_odc.stock_keeper.on_demand_craftable": "オンデマンドクラフト可能",
+  "gui.create_odc.stock_keeper.stock_zero": "在庫数: 0 (要求時に自動生産)"
 }

@@ -7,10 +7,12 @@
   "mixins": [
     "FactoryPanelBehaviourMixin",
     "FactoryPanelBlockEntityMixin",
+    "InventorySummaryMixin",
     "LogisticsManagerMixin"
   ],
   "client": [
-    "FactoryPanelScreenMixin"
+    "FactoryPanelScreenMixin",
+    "StockKeeperRequestScreenMixin"
   ],
   "server": [],
   "injectors": {

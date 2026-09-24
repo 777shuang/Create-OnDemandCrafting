@@ -14,5 +14,7 @@
   "gui.create_odc.on_demand_crafting": "On-Demand Crafting",
   "gui.create_odc.on_demand_crafting.enabled": "Enabled (Craft only on request)",
   "gui.create_odc.on_demand_crafting.disabled": "Disabled (Always restock up to limit)",
-  "gui.create_odc.on_demand_crafting.description": "Orders crafting only when requested by logistics network."
+  "gui.create_odc.on_demand_crafting.description": "Orders crafting only when requested by logistics network.",
+  "gui.create_odc.stock_keeper.on_demand_craftable": "Craft on Demand",
+  "gui.create_odc.stock_keeper.stock_zero": "Stock: 0 (Crafts on demand)"
 }
