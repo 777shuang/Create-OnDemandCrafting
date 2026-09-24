@@ -18,6 +18,10 @@ Create Mod単体では「指定アイテムを常に指定数まで自動作り�
 - 依存Mod
   - Create 6.0.10
 
+## ダウンロード
+
+[Releases](https://github.com/777shuang/Create-OnDemandCrafting/releases)より`.jar`ファイルをダウンロードしてください。
+
 ## 既知の問題
 
 ![オンデマンドクラフトを有効化したファクトリーゲージを連続して接続](images/2026-09-24_16.48.24.png)
