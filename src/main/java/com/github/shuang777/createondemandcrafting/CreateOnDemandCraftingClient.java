@@ -25,7 +25,7 @@ public class CreateOnDemandCraftingClient {
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         // Some client setup code
-        CreateOnDemandCrafting.LOGGER.info("HELLO FROM CLIENT SETUP");
-        CreateOnDemandCrafting.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+        //CreateOnDemandCrafting.LOGGER.info("HELLO FROM CLIENT SETUP");
+        //CreateOnDemandCrafting.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
     }
 }
