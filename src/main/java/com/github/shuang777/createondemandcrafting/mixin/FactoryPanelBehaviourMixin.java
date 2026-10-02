@@ -8,6 +8,8 @@ import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelBlockEntit
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelConnection;
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelPosition;
 import com.simibubi.create.foundation.utility.CreateLang;
+import java.util.Map;
+import java.util.UUID;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
@@ -18,32 +20,22 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Map;
-import java.util.UUID;
-
 @Mixin(value = FactoryPanelBehaviour.class, remap = false)
 public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
 
-  @Shadow
-  public PanelSlot slot;
+  @Shadow public PanelSlot slot;
 
-  @Shadow
-  public int recipeOutput;
+  @Shadow public int recipeOutput;
 
-  @Shadow
-  private int timer;
+  @Shadow private int timer;
 
-  @Shadow
-  public UUID network;
+  @Shadow public UUID network;
 
-  @Shadow
-  public Map<FactoryPanelPosition, FactoryPanelConnection> targetedBy;
+  @Shadow public Map<FactoryPanelPosition, FactoryPanelConnection> targetedBy;
 
-  @Shadow
-  public boolean satisfied;
+  @Shadow public boolean satisfied;
 
-  @Shadow
-  public boolean promisedSatisfied;
+  @Shadow public boolean promisedSatisfied;
 
   @Shadow
   public abstract boolean isActive();
@@ -51,20 +43,15 @@ public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
   @Shadow
   public abstract FactoryPanelBlockEntity panelBE();
 
-  @Unique
-  private boolean create_odc$onDemand = false;
+  @Unique private boolean create_odc$onDemand = false;
 
-  @Unique
-  private int create_odc$onDemandOrders = 0;
+  @Unique private int create_odc$onDemandOrders = 0;
 
-  @Unique
-  private boolean create_odc$registered = false;
+  @Unique private boolean create_odc$registered = false;
 
-  @Unique
-  private boolean create_odc$wasSatisfied = false;
+  @Unique private boolean create_odc$wasSatisfied = false;
 
-  @Unique
-  private boolean create_odc$wasPromisedSatisfied = false;
+  @Unique private boolean create_odc$wasPromisedSatisfied = false;
 
   @Unique
   private Level create_odc$getLevel() {
@@ -122,13 +109,11 @@ public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
     }
   }
 
-  /**
-   * NBT への書き込み
-   */
+  /** NBT への書き込み */
   @Inject(method = "write", at = @At("TAIL"))
-  private void create_odc$onWrite(CompoundTag nbt, HolderLookup.Provider registries, boolean clientPacket, CallbackInfo ci) {
-    if (!isActive())
-      return;
+  private void create_odc$onWrite(
+      CompoundTag nbt, HolderLookup.Provider registries, boolean clientPacket, CallbackInfo ci) {
+    if (!isActive()) return;
 
     String slotKey = CreateLang.asId(slot.name());
     CompoundTag panelTag = nbt.getCompound(slotKey);
@@ -136,14 +121,12 @@ public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
     panelTag.putInt("OnDemandOrders", this.create_odc$onDemandOrders);
   }
 
-  /**
-   * NBT からの読み込み
-   */
+  /** NBT からの読み込み */
   @Inject(method = "read", at = @At("TAIL"))
-  private void create_odc$onRead(CompoundTag nbt, HolderLookup.Provider registries, boolean clientPacket, CallbackInfo ci) {
+  private void create_odc$onRead(
+      CompoundTag nbt, HolderLookup.Provider registries, boolean clientPacket, CallbackInfo ci) {
     String slotKey = CreateLang.asId(slot.name());
-    if (!nbt.contains(slotKey))
-      return;
+    if (!nbt.contains(slotKey)) return;
 
     CompoundTag panelTag = nbt.getCompound(slotKey);
     if (panelTag.contains("OnDemand")) {
@@ -154,13 +137,11 @@ public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
     }
   }
 
-  /**
-   * 概略図（Schematic）保存時
-   */
+  /** 概略図（Schematic）保存時 */
   @Inject(method = "writeSafe", at = @At("TAIL"))
-  private void create_odc$onWriteSafe(CompoundTag nbt, HolderLookup.Provider registries, CallbackInfo ci) {
-    if (!isActive())
-      return;
+  private void create_odc$onWriteSafe(
+      CompoundTag nbt, HolderLookup.Provider registries, CallbackInfo ci) {
+    if (!isActive()) return;
 
     String slotKey = CreateLang.asId(slot.name());
     CompoundTag panelTag = nbt.getCompound(slotKey);
@@ -168,15 +149,12 @@ public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
   }
 
   /**
-   * クラフト要求の処理（tickRequests）の制御
-   * オンデマンド有効時：
-   * - 要求数（onDemandOrders）が0以下の場合は定期自動発注をキャンセル（作り置き停止）
-   * - 要求がある場合は、目標在庫の satisfied 判定をバイパスして発注処理を許可
+   * クラフト要求の処理（tickRequests）の制御 オンデマンド有効時： - 要求数（onDemandOrders）が0以下の場合は定期自動発注をキャンセル（作り置き停止） -
+   * 要求がある場合は、目標在庫の satisfied 判定をバイパスして発注処理を許可
    */
   @Inject(method = "tickRequests", at = @At("HEAD"), cancellable = true)
   private void create_odc$onTickRequestsHead(CallbackInfo ci) {
-    if (!isActive() || panelBE().restocker)
-      return;
+    if (!isActive() || panelBE().restocker) return;
 
     if (this.create_odc$onDemand) {
       if (this.create_odc$onDemandOrders <= 0) {
@@ -200,10 +178,14 @@ public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
     }
   }
 
-  /**
-   * 材料発注が成功し、RequestPromise がキューに追加されたタイミングで要求残数を消費
-   */
-  @Inject(method = "tickRequests", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/logistics/packagerLink/RequestPromiseQueue;add(Lcom/simibubi/create/content/logistics/packagerLink/RequestPromise;)V"))
+  /** 材料発注が成功し、RequestPromise がキューに追加されたタイミングで要求残数を消費 */
+  @Inject(
+      method = "tickRequests",
+      at =
+          @At(
+              value = "INVOKE",
+              target =
+                  "Lcom/simibubi/create/content/logistics/packagerLink/RequestPromiseQueue;add(Lcom/simibubi/create/content/logistics/packagerLink/RequestPromise;)V"))
   private void create_odc$onPromiseAdded(CallbackInfo ci) {
     if (this.create_odc$onDemand && this.create_odc$onDemandOrders > 0) {
       create_odc$consumeOnDemandOrders(this.recipeOutput);

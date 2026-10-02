@@ -5,16 +5,14 @@ import com.github.shuang777.createondemandcrafting.foundation.mixinInterfaces.IO
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelBehaviour;
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelBlock.PanelSlot;
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelBlockEntity;
+import java.util.EnumMap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-
-import java.util.EnumMap;
 
 @Mixin(value = FactoryPanelBlockEntity.class, remap = false)
 public abstract class FactoryPanelBlockEntityMixin implements IOnDemandBlockEntity {
 
-  @Shadow
-  public EnumMap<PanelSlot, FactoryPanelBehaviour> panels;
+  @Shadow public EnumMap<PanelSlot, FactoryPanelBehaviour> panels;
 
   @Override
   public boolean create_odc$isOnDemand(PanelSlot slot) {
