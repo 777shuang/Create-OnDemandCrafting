@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = FactoryPanelBehaviour.class, remap = false)
@@ -194,5 +195,16 @@ public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
         this.timer = 1;
       }
     }
+  }
+
+  /** オンデマンドクラフト有効時、目標量が0であっても「目標量が設定されていません」警告を表示させない */
+  @Redirect(
+      method = "getLabel",
+      at = @At(value = "INVOKE", target = "Ljava/util/Map;isEmpty()Z", ordinal = 0))
+  private boolean create_odc$suppressNoTargetAmountWarning(Map<?, ?> map) {
+    if (this.create_odc$onDemand) {
+      return true;
+    }
+    return map.isEmpty();
   }
 }
