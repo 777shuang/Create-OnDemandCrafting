@@ -2,69 +2,97 @@
 
 ## Project Overview
 
-**Create: On Demand Crafting** (`create_odc`) — a NeoForge mod that adds on-demand auto-crafting to Create's logistics network: items can be crafted only when requested through the network, instead of always keeping a stock.
+**Create: On Demand Crafting** (`create_odc`) — a NeoForge mod that adds on-demand auto-crafting to Create's logistics
+network: items are crafted only when requested through the network, instead of always keeping a stock.
+
+Base package: `com.github.shuang777.createondemandcrafting` (matches `mod_group_id` in `gradle.properties`).
 
 ## Project Structure
 
 Two Gradle projects:
 
-- **Root (`Create-OnDemandCrafting/`)** — builds the `create_odc` mod (mod id: `create_odc`, group
-  `com.github.shuang777.createondemandcrafting`). Uses Gradle 9.7.1 (`gradlew` in root). Depends on Create via **Maven**
-  (`com.simibubi.create:create-1.21.1:6.0.10-281`), not via the local submodule.
-- **`Create/`** — a **git submodule** of https://github.com/Creators-of-Create/Create (`.gitmodules`), checked out 
-  detached at tag `mc1.21.1-6.0.10`. Builds the Create mod itself (mod id: `create`). Uses Gradle 8.14.3 (`gradlew` 
-  in `Create/`). just reference source for mixins; not part of the root build.
+- **Root (`Create-OnDemandCrafting/`)** — builds the `create_odc` mod. Depends on Create via **Maven**
+  (see `repositories` / `dependencies` in `build.gradle`), not via the local submodule.
+- **`Create/`** — git submodule of Create, checked out detached (see `git -C Create describe --tags`). Reference
+  source for mixins only; not part of the root build.
 
-**Entrypoints**: `CreateOnDemandCrafting` (root, `@Mod("create_odc")`), `CreateOnDemandCraftingClient` (root, `@Mod` with `dist = Dist.CLIENT`).
+**Entrypoints**: `CreateOnDemandCrafting` (root, `@Mod("create_odc")`), `CreateOnDemandCraftingClient` (root, `@Mod`
+with `dist = Dist.CLIENT`).
 
 ### Source layout (root)
 
-Package base: `com.github.shuang777.createondemandcrafting`
-
-- `content/logistics/OnDemandCraftingManager` — core registry/logic for on-demand panels
-- `foundation/mixinInterfaces/` — `IOnDemandPanel`, `IOnDemandBlockEntity` (duck interfaces)
-- `mixin/` — Create class mixins (see below)
-- `network/` — `ModPackets`, `SetOnDemandPayload` (play-to-server payload `create_odc:set_on_demand`)
-- `Config.java` — empty COMMON config spec (registered in mod constructor)
-- `src/main/templates/META-INF/neoforge.mods.toml` — processed by `generateModMetadata`
+- `content/logistics/OnDemandCraftingManager` — core registry/logic: tracks on-demand `FactoryPanelBehaviour`s per
+  network UUID (`WeakReference` set, self-cleaning of removed entries); resolves craftable requests against
+  `InventorySummary` / `LogisticsManager` / `PackageOrderWithCrafts`.
+- `foundation/mixinInterfaces/` — duck interfaces: `IOnDemandPanel` (flag + order counting), `IOnDemandBlockEntity`
+  (per-`PanelSlot` flag).
+- `mixin/` — Create class mixins (see below).
+- `network/` — `ModPackets` (registers play-to-server payloads), `SetOnDemandPayload` (payload id
+  `create_odc:set_on_demand`; carries `BlockPos` + `PanelSlot` + boolean, applies server-side via
+  `IOnDemandPanel` + `notifyUpdate`).
+- `Config.java` — empty COMMON config spec (registered in mod constructor).
+- `src/main/templates/META-INF/neoforge.mods.toml` — template processed by the `generateModMetadata` task in
+  `build.gradle` (placeholders expanded from `gradle.properties`).
 
 ## Build & Development Commands
 
 - **Build `create_odc` mod**: `./gradlew build` (from repo root)
-- **Build Create mod**: `./gradlew build` (from `Create/` directory)
-- **Run game tests**: `./gradlew runGameTestServer` (from `Create/`; Create registers gametests). The root project has the run config but currently registers **no** gametests — the game test server will crash with none.
-- **Generate data resources**: `./gradlew data` or the `data` run config (outputs to `src/generated/resources/`; directory created on first run)
+- **Run game tests**: `./gradlew runGameTestServer` (from `Create/`; Create registers gametests). The root project has
+  the run config but currently registers **no** gametests — the game test server exits/crashes with none.
+- **Generate data resources**: `./gradlew data` or the `data` run config (outputs to `src/generated/resources/`;
+  directory is created on first run and is not currently checked in)
+- **Format**: Spotless is configured in `build.gradle` (`spotless { java { ... } }`); run the Spotless task before
+  committing (e.g. `./gradlew spotlessApply`)
 - **Init submodule**: `git submodule update --init` (root CI does *not* check out submodules)
 
-## Key Configuration
+## Versions & Configuration Lookup
 
-- **Java 21** required for both projects
-- **NeoForge**: root `21.1.250`, Create `21.1.219`
-- **Minecraft**: `1.21.1`; Parchment mappings `2024.11.17` (root: `parchment_minecraft_version=1.21.1`; Create: `same`)
-- **Root `gradle.properties`**: `mod_id=create_odc`, `mod_version=0.1.0`, `create_version=6.0.10-281` (plus `ponder_version`, `flywheel_version`, `registrate_version`)
-- **ModDevGradle** plugin `2.0.146` (root)
-- **Root dependencies**: Create/Ponder/Registrate from Maven (`maven.createmod.net`, `maven.ithundxr.dev`); `localRuntime` dev mods: modernfix, ferritecore, fastboot
-- **Mixins** (`src/main/resources/create_odc.mixins.json`, package `...mixin`, refMap `create_odc.refmap.json`, Java 21):
-  - common: `FactoryPanelBehaviourMixin`, `FactoryPanelBlockEntityMixin`, `InventorySummaryMixin`, `LogisticsManagerMixin`
-  - client: `FactoryPanelScreenMixin`, `StockKeeperRequestScreenMixin`
-- **Data generation output**: `src/generated/resources/` (in source set; `.cache` and `.bbmodel` excluded)
-- **Languages**: `en_us.json`, `ja_jp.json` under `assets/create_odc/lang/`
+Do not hardcode dependency versions in this file. Resolve them from:
+
+- `gradle.properties` — mod coordinates (`mod_id`, `mod_name`, `mod_license`, `mod_version`, `mod_group_id`) and
+  version catalog values (Minecraft, NeoForge, Parchment, Create, Ponder, Flywheel, Registrate, version ranges).
+- `build.gradle` — Java toolchain, ModDevGradle/plugin setup, `repositories` (Create/Ponder/Flywheel/Registrate,
+  CurseMaven), `dependencies` (including `localRuntime` dev-only mods), run configs, `generateModMetadata` wiring.
+- `gradle/wrapper/gradle-wrapper.properties` (root and `Create/`) — the Gradle wrapper used by each project.
+- `src/main/templates/META-INF/neoforge.mods.toml` — runtime dependency declarations (`create`, `neoforge`,
+  `minecraft`) and how ranges map to `gradle.properties` placeholders.
+
+## Mixins
+
+Config: `src/main/resources/create_odc.mixins.json` (package `...mixin`, `JAVA_21` compatibility, `defaultRequire: 1`).
+
+- common: `FactoryPanelBehaviourMixin` (persists on-demand flag/orders to NBT, registers/unregisters with
+  `OnDemandCraftingManager`, suppresses restock ticks while on-demand), `FactoryPanelBlockEntityMixin`,
+  `InventorySummaryMixin`, `LogisticsManagerMixin`
+- client: `FactoryPanelScreenMixin` (toggle button + `SetOnDemandPayload` send), `StockKeeperRequestScreenMixin`
+
+Mixin targets live in the `Create/` submodule — read the target source there before editing an injector.
 
 ## Run Configurations
 
-Root NeoForge run configs: `client`, `server`, `gameTestServer`, `data`. All use log level DEBUG with `REGISTRIES` markers; game test namespaces gated by `neoforge.enabledGameTestNamespaces=create_odc`.
+Defined in `build.gradle` (`neoForge { runs { ... } }`): `client`, `server` (`--nogui`), `gameTestServer`, `data`.
+Shared settings: console log level DEBUG, `forge.logging.markers=REGISTRIES`, gametest namespace gated by
+`neoforge.enabledGameTestNamespaces=<mod_id>`. The `data` run passes `--mod <mod_id> --all --output
+src/generated/resources/ --existing src/main/resources/`.
+
+`src/main/resources` also holds `assets/create_odc/lang/` (`en_us.json`, `ja_jp.json`). Datagen cache (`**/.cache`)
+and BlockBench files (`**/*.bbmodel`) are excluded from the final jar (see `sourceSets.main.resources`).
 
 ## Git & CI
 
-- `.gitignore` excludes `run/`, `build/`, `.gradle/`, `.idea/`, `.vscode/`, `.run/`, `bin/`, `repo/`, `**/src/generated/**/.cache/`
-- **Root CI** (`.github/workflows/build.yml`): `./gradlew build` only, on push/PR, Ubuntu + JDK 21 (temurin); no submodule checkout
-- **Create CI** (`Create/.github/workflows/build.yml`): `./gradlew build` + `./gradlew runGameTestServer` (skipped on release); `./gradlew publishMods` on release via `workflow_dispatch` input `is-release` (needs `MODRINTH_TOKEN`, `CURSEFORGE_TOKEN`, `GITHUB_TOKEN`). Also has label-actions and Crowdin workflows.
+- `.gitignore` covers Gradle outputs (`build/`, `.gradle/`), IDE files (`.idea/`, `.vscode/`, `.run/`, `bin/`), OS files
+  (`.DS_Store`), and mod-runtime artifacts (`run/`, `repo/`, `**/src/generated/**/.cache/`).
+- **Root CI** (`.github/workflows/build.yml`): `./gradlew build` only, on push/PR, Ubuntu + Temurin JDK (see workflow
+  for the exact JDK setup); no submodule checkout.
+- **Create CI** (`Create/.github/workflows/build.yml`) is upstream's and is not used to build `create_odc`.
 
 ## Important Gotchas
 
-- **Two `gradlew` wrappers** with different Gradle versions (root: 9.7.1, Create/: 8.14.3). Use the correct one for each project.
-- `Create/` is a **submodule on a detached HEAD** — branch edits inside it require creating a branch first; bumping it means committing a new submodule SHA at root.
-- `Create/settings.gradle` only runs `includeBuild(".")` / `includeBuild("Ponder")` if a `Ponder/` directory exists — it currently does **not**, so no composite build is active.
-- The `run/` directory contains runtime files, configs, and crash reports — gitignored, regenerated per run.
-- Root `build.gradle` uses `neoForge.ideSyncTask generateModMetadata` to auto-generate mod metadata on IDE reload.
-- Working tree may contain uncommitted cleanup of NeoForge template boilerplate (commented-out example code in `Config`/main classes).
+- **Two `gradlew` wrappers** (root and `Create/`) can differ. Always use the wrapper of the project you intend to
+  build, and check its `gradle/wrapper/gradle-wrapper.properties` when versions matter.
+- `Create/` is a **submodule on a detached HEAD** — branch edits inside it require creating a branch first; bumping it
+  means committing a new submodule SHA at root.
+- `Create/settings.gradle` only activates the `Ponder` composite build if a `Ponder/` directory exists — it currently
+  does **not**, so no composite build is active.
+- Root `build.gradle` hooks `generateModMetadata` into `neoForge.ideSyncTask`, so mod metadata regenerates on IDE
+  sync; template placeholders must stay in sync with `gradle.properties` keys.
