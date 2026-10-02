@@ -3,6 +3,20 @@ plugins {
     id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.146'
     id 'idea'
+    id "com.diffplug.spotless" version "8.10.3"
+}
+
+spotless {
+    java {
+        // 対象ファイルを指定 (標準的なsrc配下のJavaファイル)
+        //target "src/**/*.java"
+        
+        // Google Java Style を適用
+        googleJavaFormat()
+        
+        // (オプション) 未使用のインポート文を自動削除したい場合
+        removeUnusedImports()
+    }
 }
 
 tasks.named('wrapper', Wrapper).configure {
