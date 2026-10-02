@@ -8,14 +8,10 @@ plugins {
 
 spotless {
     java {
-        // 対象ファイルを指定 (標準的なsrc配下のJavaファイル)
-        //target "src/**/*.java"
-        
-        // Google Java Style を適用
         googleJavaFormat()
-        
-        // (オプション) 未使用のインポート文を自動削除したい場合
+        importOrder()
         removeUnusedImports()
+        trimTrailingWhitespace()
     }
 }
 
