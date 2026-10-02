@@ -8,8 +8,12 @@
 
 Two Gradle projects:
 
-- **Root (`Create-OnDemandCrafting/`)** — builds the `create_odc` mod (mod id: `create_odc`, group `com.github.shuang777.createondemandcrafting`). Uses Gradle 9.7.1 (`gradlew` in root). Depends on Create via **Maven** (`com.simibubi.create:create-1.21.1:6.0.10-281`), not via the local submodule.
-- **`Create/`** — a **git submodule** of https://github.com/Creators-of-Create/Create (`.gitmodules`), checked out detached at tag `mc1.21.1-6.0.10`. Builds the Create mod itself (mod id: `create`). Uses Gradle 8.14.3 (`gradlew` in `Create/`). Reference source for mixins; not part of the root build.
+- **Root (`Create-OnDemandCrafting/`)** — builds the `create_odc` mod (mod id: `create_odc`, group
+  `com.github.shuang777.createondemandcrafting`). Uses Gradle 9.7.1 (`gradlew` in root). Depends on Create via **Maven**
+  (`com.simibubi.create:create-1.21.1:6.0.10-281`), not via the local submodule.
+- **`Create/`** — a **git submodule** of https://github.com/Creators-of-Create/Create (`.gitmodules`), checked out 
+  detached at tag `mc1.21.1-6.0.10`. Builds the Create mod itself (mod id: `create`). Uses Gradle 8.14.3 (`gradlew` 
+  in `Create/`). just reference source for mixins; not part of the root build.
 
 **Entrypoints**: `CreateOnDemandCrafting` (root, `@Mod("create_odc")`), `CreateOnDemandCraftingClient` (root, `@Mod` with `dist = Dist.CLIENT`).
 
