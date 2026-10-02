@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import com.simibubi.create.content.logistics.packagerLink.LogisticsManager;
 import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
 
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 public class OnDemandCraftingManager {
 
@@ -25,7 +27,8 @@ public class OnDemandCraftingManager {
     public static synchronized void register(FactoryPanelBehaviour behaviour) {
         if (behaviour == null || behaviour.network == null)
             return;
-        Set<WeakReference<FactoryPanelBehaviour>> set = ACTIVE_PANELS.computeIfAbsent(behaviour.network, k -> new HashSet<>());
+        Set<WeakReference<FactoryPanelBehaviour>> set = ACTIVE_PANELS.computeIfAbsent(behaviour.network,
+                k -> new HashSet<>());
         boolean alreadyPresent = false;
         Iterator<WeakReference<FactoryPanelBehaviour>> it = set.iterator();
         while (it.hasNext()) {
@@ -81,7 +84,8 @@ public class OnDemandCraftingManager {
 
     /**
      * 物流ネットワークからの注文（パッケージリクエスト）発生時に呼び出される。
-     * オンデマンドゲージが担当するアイテムについて、在庫不足分（または要求分）を検知してクラフト要求を発行する。
+     * クラフトツリーを再帰的に走査し、中間ノードを含めて不足分を評価・タスク計画を立案し、
+     * 依存関係順（ボトムアップ：末端 -> 中間 -> 親）にオンデマンドクラフト要求を発行する。
      */
     public static void onPackageRequest(UUID network, PackageOrderWithCrafts order) {
         if (network == null || order == null || order.isEmpty())
@@ -93,37 +97,138 @@ public class OnDemandCraftingManager {
 
         InventorySummary summary = LogisticsManager.getSummaryOfNetwork(network, true);
 
+        // 仮在庫プール（実在庫から消費された分を差し引き、中間クラフトによる余剰生産分を蓄積）
+        Map<ItemKey, Integer> virtualStock = new HashMap<>();
+
+        // 実行計画リスト（ポストオーダー走査により、孫 -> 子 -> 親 の順序で追加される）
+        List<CraftingPlan> orderedPlan = new java.util.ArrayList<>();
+
         for (BigItemStack stack : order.stacks()) {
             if (stack.stack.isEmpty() || stack.count <= 0)
                 continue;
 
-            for (FactoryPanelBehaviour panel : panels) {
-                if (!panel.isActive() || panel.panelBE().restocker)
-                    continue;
+            resolveDemand(network, panels, summary, stack.stack, stack.count, virtualStock, orderedPlan,
+                    new HashSet<>());
+        }
 
-                if (!(panel instanceof IOnDemandPanel onDemandPanel) || !onDemandPanel.create_odc$isOnDemand())
-                    continue;
+        if (orderedPlan.isEmpty())
+            return;
 
-                ItemStack filter = panel.getFilter();
-                if (filter.isEmpty() || !ItemStack.isSameItemSameComponents(filter, stack.stack))
-                    continue;
-
-                if (panel.recipeAddress.isBlank() || panel.targetedBy.isEmpty())
-                    continue;
-
-                // ネットワーク内の現在庫数
-                int currentStock = summary.getCountOf(stack.stack);
-                // 不足している数量を計算（在庫で賄えない分）
-                int needed = Math.max(0, stack.count - currentStock);
-                if (needed <= 0)
-                    continue;
-
-                // オンデマンド要求を追加
-                onDemandPanel.create_odc$addOnDemandOrders(needed);
-                // タイマーを即時発注可能にリセット
+        // 依存関係順（ボトムアップ順：末端素材タスク -> 中間タスク -> 最終親タスク）にタスクを発行
+        for (CraftingPlan plan : orderedPlan) {
+            FactoryPanelBehaviour panel = plan.panel();
+            if (panel instanceof IOnDemandPanel onDemandPanel) {
+                onDemandPanel.create_odc$addOnDemandOrders(plan.totalOutput());
                 panel.resetTimer();
             }
         }
+    }
+
+    /**
+     * リクエスト解決の再帰的処理。
+     * 要求アイテムに対して実在庫および仮想在庫を引き当て、不足分があれば該当するオンデマンドパネルの
+     * レシピ材料へと再帰的に探索を行う。
+     */
+    private static void resolveDemand(
+            UUID network,
+            Set<FactoryPanelBehaviour> panels,
+            InventorySummary summary,
+            ItemStack requestedItem,
+            int requestedCount,
+            Map<ItemKey, Integer> virtualStock,
+            List<CraftingPlan> orderedPlan,
+            Set<FactoryPanelBehaviour> callStack) {
+        if (requestedItem == null || requestedItem.isEmpty() || requestedCount <= 0)
+            return;
+
+        ItemKey key = new ItemKey(requestedItem);
+
+        // 1. 仮在庫の現在利用可能量を取得（未登録なら実在庫サマリーから初期化）
+        int currentAvailable = virtualStock.computeIfAbsent(key, k -> summary.getCountOf(requestedItem));
+
+        // 2. 在庫から引き当て
+        int allocatedFromStock = Math.min(currentAvailable, requestedCount);
+        virtualStock.put(key, currentAvailable - allocatedFromStock);
+
+        int remainingNeeded = requestedCount - allocatedFromStock;
+        if (remainingNeeded <= 0) {
+            // 在庫で賄えたので、このノードでの新規クラフトタスクは不要
+            return;
+        }
+
+        // 3. このアイテムを製造可能なアクティブなオンデマンドパネルを探索
+        FactoryPanelBehaviour panel = findCraftingPanel(panels, requestedItem);
+        if (panel == null || callStack.contains(panel)) {
+            // クラフトレシピが存在しない（末端素材）、または循環参照防止
+            return;
+        }
+
+        // 4. 中間ノード（または最終ノード）の評価処理
+        callStack.add(panel);
+
+        int recipeOutput = Math.max(1, panel.recipeOutput);
+        // 必要バッチ数を算出（切り上げ計算）
+        int batches = (remainingNeeded + recipeOutput - 1) / recipeOutput;
+        int totalProduced = batches * recipeOutput;
+        int surplus = totalProduced - remainingNeeded;
+
+        // 余剰生産分を仮在庫プールに追加（他の中間需要や後続要求で利用可能にする）
+        virtualStock.put(key, virtualStock.get(key) + surplus);
+
+        // 5. 材料（子タスク）の再帰的探索
+        Level level = panel.panelBE().getLevel();
+        if (level != null && !panel.targetedBy.isEmpty()) {
+            // 接続された材料パネルから材料アイテムと1回あたりの必要数を集計
+            Map<ItemKey, Integer> ingredientsNeeded = new HashMap<>();
+            for (com.simibubi.create.content.logistics.factoryBoard.FactoryPanelConnection connection : panel.targetedBy
+                    .values()) {
+                FactoryPanelBehaviour source = FactoryPanelBehaviour.at(level, connection.from);
+                if (source == null)
+                    continue;
+
+                ItemStack ingStack = source.getFilter();
+                if (ingStack.isEmpty())
+                    continue;
+
+                int requiredForRecipe = connection.amount * batches;
+                ItemKey ingKey = new ItemKey(ingStack);
+                ingredientsNeeded.merge(ingKey, requiredForRecipe, Integer::sum);
+            }
+
+            // 各材料について再帰的に需要を解決
+            for (Map.Entry<ItemKey, Integer> entry : ingredientsNeeded.entrySet()) {
+                resolveDemand(
+                        network, panels, summary,
+                        entry.getKey().getStack(), entry.getValue(),
+                        virtualStock, orderedPlan, callStack);
+            }
+        }
+
+        // 6. 依存タスク（子タスク）の探索完了後、このノードのクラフト計画をリストに追加
+        // （ポストオーダー走査により、孫タスク -> 子タスク -> 親タスク の依存順序が保証される）
+        orderedPlan.add(new CraftingPlan(panel, requestedItem, batches, totalProduced));
+
+        callStack.remove(panel);
+    }
+
+    /**
+     * 指定されたアイテムを製造可能なアクティブなオンデマンドファクトリーパネルを検索する。
+     */
+    private static FactoryPanelBehaviour findCraftingPanel(Set<FactoryPanelBehaviour> panels, ItemStack stack) {
+        for (FactoryPanelBehaviour panel : panels) {
+            if (!panel.isActive() || panel.panelBE().restocker)
+                continue;
+            if (!(panel instanceof IOnDemandPanel onDemandPanel) || !onDemandPanel.create_odc$isOnDemand())
+                continue;
+            if (panel.recipeAddress.isBlank() || panel.targetedBy.isEmpty())
+                continue;
+
+            ItemStack filter = panel.getFilter();
+            if (!filter.isEmpty() && ItemStack.isSameItemSameComponents(filter, stack)) {
+                return panel;
+            }
+        }
+        return null;
     }
 
     /**
@@ -165,15 +270,42 @@ public class OnDemandCraftingManager {
     }
 
     /**
-     * 上位のファクトリーゲージが材料不足を検知した際、下位の材料ゲージにオンデマンド要求を発行する。
+     * クラフト計画レコード
      */
-    public static void onUpstreamMaterialMissing(FactoryPanelBehaviour sourcePanel, int missingCount) {
-        if (sourcePanel == null || !sourcePanel.isActive() || missingCount <= 0)
-            return;
+    public record CraftingPlan(
+            FactoryPanelBehaviour panel,
+            ItemStack targetItem,
+            int batches,
+            int totalOutput) {
+    }
 
-        if (sourcePanel instanceof IOnDemandPanel onDemandPanel && onDemandPanel.create_odc$isOnDemand()) {
-            onDemandPanel.create_odc$addOnDemandOrders(missingCount);
-            sourcePanel.resetTimer();
+    /**
+     * ItemStack のアイテム種類とデータコンポーネントに基づくマップキー用クラス
+     */
+    public static final class ItemKey {
+        private final ItemStack stack;
+
+        public ItemKey(ItemStack stack) {
+            this.stack = stack.copyWithCount(1);
+        }
+
+        public ItemStack getStack() {
+            return stack;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            ItemKey itemKey = (ItemKey) o;
+            return ItemStack.isSameItemSameComponents(stack, itemKey.stack);
+        }
+
+        @Override
+        public int hashCode() {
+            return ItemStack.hashItemAndComponents(stack);
         }
     }
 }

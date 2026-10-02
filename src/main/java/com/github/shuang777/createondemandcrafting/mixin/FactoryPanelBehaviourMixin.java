@@ -213,19 +213,4 @@ public abstract class FactoryPanelBehaviourMixin implements IOnDemandPanel {
       }
     }
   }
-
-  /**
-   * 上位ゲージが材料不足を検知して sendEffect(fromPos, false) を呼び出した際、
-   * 該当する下位材料ゲージにオンデマンド要求を発行して多段クラフトを連鎖させる
-   */
-  @Inject(method = "sendEffect", at = @At("HEAD"))
-  private void create_odc$onSendEffect(FactoryPanelPosition fromPos, boolean success, CallbackInfo ci) {
-    Level level = create_odc$getLevel();
-    if (!success && level != null && !level.isClientSide()) {
-      FactoryPanelBehaviour source = FactoryPanelBehaviour.at(level, fromPos);
-      if (source != null) {
-        OnDemandCraftingManager.onUpstreamMaterialMissing(source, 1);
-      }
-    }
-  }
 }
