@@ -39,8 +39,6 @@ with `dist = Dist.CLIENT`).
 - **Build `create_odc` mod**: `./gradlew build` (from repo root)
 - **Run game tests**: `./gradlew runGameTestServer` (from `Create/`; Create registers gametests). The root project has
   the run config but currently registers **no** gametests — the game test server exits/crashes with none.
-- **Generate data resources**: `./gradlew data` or the `data` run config (outputs to `src/generated/resources/`;
-  directory is created on first run and is not currently checked in)
 - **Format**: Spotless is configured in `build.gradle` (`spotless { java { ... } }`); run the Spotless task before
   committing (e.g. `./gradlew spotlessApply`)
 - **Init submodule**: `git submodule update --init` (root CI does *not* check out submodules)
@@ -78,21 +76,9 @@ src/generated/resources/ --existing src/main/resources/`.
 `src/main/resources` also holds `assets/create_odc/lang/` (`en_us.json`, `ja_jp.json`). Datagen cache (`**/.cache`)
 and BlockBench files (`**/*.bbmodel`) are excluded from the final jar (see `sourceSets.main.resources`).
 
-## Git & CI
-
-- `.gitignore` covers Gradle outputs (`build/`, `.gradle/`), IDE files (`.idea/`, `.vscode/`, `.run/`, `bin/`), OS files
-  (`.DS_Store`), and mod-runtime artifacts (`run/`, `repo/`, `**/src/generated/**/.cache/`).
-- **Root CI** (`.github/workflows/build.yml`): `./gradlew build` only, on push/PR, Ubuntu + Temurin JDK (see workflow
-  for the exact JDK setup); no submodule checkout.
-- **Create CI** (`Create/.github/workflows/build.yml`) is upstream's and is not used to build `create_odc`.
-
 ## Important Gotchas
 
 - **Two `gradlew` wrappers** (root and `Create/`) can differ. Always use the wrapper of the project you intend to
   build, and check its `gradle/wrapper/gradle-wrapper.properties` when versions matter.
-- `Create/` is a **submodule on a detached HEAD** — branch edits inside it require creating a branch first; bumping it
-  means committing a new submodule SHA at root.
-- `Create/settings.gradle` only activates the `Ponder` composite build if a `Ponder/` directory exists — it currently
-  does **not**, so no composite build is active.
 - Root `build.gradle` hooks `generateModMetadata` into `neoForge.ideSyncTask`, so mod metadata regenerates on IDE
   sync; template placeholders must stay in sync with `gradle.properties` keys.
