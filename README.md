@@ -1,5 +1,8 @@
 # Create: On Demand Crafting
 
+> [!IMPORTANT]
+> [Create: On Demand](https://www.curseforge.com/minecraft/mc-mods/create-on-demand)という同じ目的のModの存在を確認したため，本Modの開発は停止します。
+
 > [!NOTE]
 > 本ModはAIを使用して作成しました。
 
